@@ -1,0 +1,76 @@
+#include "llvm/Pass.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/Transforms/Instrumentation.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Utils/ModuleUtils.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/MemoryBuiltins.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/IR/InstVisitor.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/InstrTypes.h" // callbase
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Type.h"
+
+#include <stdlib.h>
+#include <fstream>
+#include <string>
+#include "../handlerFile2.cpp"
+using namespace llvm;
+using namespace std;
+
+string outputFile;
+
+namespace {
+  struct Handler8 : public ModulePass {
+  public:
+    static char ID;
+    Handler8() : ModulePass(ID) {};
+    bool runOnModule(Module &M) {
+      errs() << "\ngluten tag, 동료 >:)\n";
+      ifstream reader; reader.open("int2k_targetFile.txt", std::ifstream::in);
+      reader >> outputFile;
+      reader.close();
+			errs() << "your outputFile is: " << outputFile << "\n";
+			ofstream writer;
+    	writer.open("handler.cpp", std::ios::out);
+    	char const *s = customHandler;
+    	writer << s;
+    	writer.close();
+    	system("clang++ -emit-llvm handler.cpp -c -o handler.bc");
+			M.dumpToFile(); // int2kBC.bc
+			string command = "llvm-link handler.bc int2kBC.bc -o "+outputFile+".bc";
+			system(command.c_str());
+      command = "clang++ -fsanitize='handler8Helper' -emit-llvm -c "+outputFile+".bc -o "+outputFile+".bc > /dev/null";
+      system(command.c_str());
+      system("rm int2kBC.txt int2kBC.bc handler.cpp handler.bc");      
+      system("rm int2k_targetFile.txt");
+      system("rm int2kInfo.txt int2kGraph.txt");
+      //command = "rm "+outputFile+".bc "; system(command.c_str());
+      system("rm callgraph_final.dot callgraph_initial.dot");
+      //errs() << (&M) << "\n";
+      return true;
+    }
+    ~Handler8() {
+      string cmd = "clang++ "+outputFile+".bc -o "+outputFile;
+      system(cmd.c_str());
+      errs () << "done\n";
+    }
+  };
+}
+
+char Handler8::ID = 0;
+
+INITIALIZE_PASS(Handler8, "Handler8", 
+    "Handler8Pass: test pass", 
+    false, false)
+
+ModulePass *llvm::createHandler8Pass() {
+  return new Handler8();
+}

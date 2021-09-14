@@ -156,7 +156,6 @@ namespace {
       system("rm callgraph_final.dot callgraph_initial.dot");
       system("rm int2kGraph.txt int2kInfo.txt int2kBC.txt int2kBC.bc");
       errs() << "\n";
-      M.dumpToFile();
       return false;
     }
   };
